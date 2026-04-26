@@ -14,6 +14,7 @@ function M.new(capacity)
     end
 
     local function add_value(v)
+        if v == nil then return nil end
         if not seen[v] then
             if #order >= capacity then
                 evict_oldest()
