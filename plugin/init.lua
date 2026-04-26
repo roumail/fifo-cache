@@ -2,91 +2,91 @@
 local M = {}
 
 function M.new(capacity)
-    local seen = {}
-    local order = {}
-    local ready = false
+  local seen = {}
+  local order = {}
+  local ready = false
 
-    local function evict_key(v)
-      if v == nil then return nil end
-      for i, val in ipairs(order) do
-        if val == v then
-          table.remove(order, i)
-          seen[v] = nil
-          break
-        end
+  local function evict_key(v)
+    if v == nil then return nil end
+    for i, val in ipairs(order) do
+      if val == v then
+        table.remove(order, i)
+        seen[v] = nil
+        break
       end
-      ready = (#order >= capacity)
     end
+    ready = (#order >= capacity)
+  end
 
-   local function filter_order(predicate)
-      local new_order = {}
-      for _, v in ipairs(order) do
-          if predicate(v) then
-              table.insert(new_order, v)
-          else
-              seen[v] = nil
-          end
+  local function filter_order(predicate)
+    local new_order = {}
+    for _, v in ipairs(order) do
+      if predicate(v) then
+        table.insert(new_order, v)
+      else
+        seen[v] = nil
       end
-      order = new_order
+    end
+    order = new_order
+  end
+
+  local function evict_keys(keys)
+    if not keys then return end
+    local to_remove = {}
+    for _, k in ipairs(keys) do
+      to_remove[k] = true
     end
 
-    local function evict_keys(keys)
-      if not keys then return end
-      local to_remove = {}
-      for _, k in ipairs(keys) do
-          to_remove[k] = true
+    filter_order(function(v)
+      return not to_remove[v]
+    end)
+    ready = (#order >= capacity)
+  end
+
+  local function evict_oldest()
+    local oldest = table.remove(order, 1)
+    if oldest then
+      seen[oldest] = nil
+    end
+  end
+
+  local function add_value(v)
+    if v == nil then return nil end
+    if not seen[v] then
+      if #order >= capacity then
+        evict_oldest()
       end
 
-      filter_order(function(v)
-          return not to_remove[v]
-      end)
-      ready = (#order >= capacity)
+      seen[v] = true
+      table.insert(order, v)
     end
 
-    local function evict_oldest()
-        local oldest = table.remove(order, 1)
-        if oldest then
-            seen[oldest] = nil
-        end
+    if #order >= capacity then
+      ready = true
     end
 
-    local function add_value(v)
-        if v == nil then return nil end
-        if not seen[v] then
-            if #order >= capacity then
-                evict_oldest()
-            end
+    return ready
+  end
 
-            seen[v] = true
-            table.insert(order, v)
-        end
+  local function is_ready()
+    return ready
+  end
 
-        if #order >= capacity then
-            ready = true
-        end
-
-        return ready
+  local function get_cache()
+    local copy = {}
+    for i, v in ipairs(order) do
+      copy[i] = v
     end
+    return copy
+  end
 
-    local function is_ready()
-        return ready
-    end
-
-    local function get_cache()
-        local copy = {}
-        for i, v in ipairs(order) do
-            copy[i] = v
-        end
-        return copy
-    end
-
-    return {
-        evict_key = evict_key,
-        evict_keys = evict_keys,
-        add_value = add_value,
-        is_ready = is_ready,
-        get_cache = get_cache
-    }
+  return {
+    evict_key = evict_key,
+    evict_keys = evict_keys,
+    add_value = add_value,
+    is_ready = is_ready,
+    get_cache = get_cache
+  }
 end
 
 return M
