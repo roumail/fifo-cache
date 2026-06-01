@@ -80,18 +80,19 @@ function M.new(capacity)
     return copy
   end
 
-    local function reverse()
-        local len = #order
-        for i = 1, math.floor(len / 2) do
-            order[i], order[len - i + 1] = order[len - i + 1], order[i]
-        end
-    end
-    return {
-        add_value = add_value,
-        is_ready = is_ready,
-        get_cache = get_cache,
-        reverse = reverse
-    }
+  local function reverse()
+      local len = #order
+      for i = 1, math.floor(len / 2) do
+          order[i], order[len - i + 1] = order[len - i + 1], order[i]
+      end
+  end
+  return {
+      evict_keys = evict_keys,
+      add_value = add_value,
+      is_ready = is_ready,
+      get_cache = get_cache,
+      reverse = reverse
+  }
 end
 
 return M
